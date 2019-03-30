@@ -23,6 +23,7 @@
 #include <string>
 #include <fstream>
 #include <sstream>
+#include <vector>
 
 // Headers das bibliotecas OpenGL
 #include <glad/glad.h>   // Criação de contexto OpenGL 3.3
@@ -30,6 +31,13 @@
 
 // Headers locais, definidos na pasta "include/"
 #include "utils.h"
+
+#define PI 3.14159265
+
+struct Vertex {
+    int x;
+    int y;
+};
 
 // Declaração de várias funções utilizadas em main().  Essas estão definidas
 // logo após a definição de main() neste arquivo.
@@ -543,9 +551,7 @@ std::vector<Vertex> getCircleVertexArray(int numberOfVertex, int raio) {
     origin.x = 0;
     origin.y = 0;
 
-    float numberOfVertex = 16;
     float angleIncrement = 360/numberOfVertex;
-    float raio = 5;
 
     std::vector<Vertex> circleVertexArray;
 
@@ -553,7 +559,7 @@ std::vector<Vertex> getCircleVertexArray(int numberOfVertex, int raio) {
         circleVertexArray.push_back(getVertex(origin, currentAngle, raio));
     }
     
-    return  circleVertexArray
+    return  circleVertexArray;
 }
 
 // WIP
