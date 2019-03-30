@@ -45,6 +45,10 @@ void FramebufferSizeCallback(GLFWwindow* window, int width, int height);
 void ErrorCallback(int error, const char* description);
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode);
 
+// Funções para obter círculo
+std::vector<Vertex> getCircleVertexArray(int numberOfVertex, int raio);
+Vertex getVertex(Vertex origin, float angle, float raio);
+
 int main()
 {
     // Inicializamos a biblioteca GLFW, utilizada para criar uma janela do
@@ -533,5 +537,31 @@ void ErrorCallback(int error, const char* description)
     fprintf(stderr, "ERROR: GLFW: %s\n", description);
 }
 
-// vim: set spell spelllang=pt_br :
+std::vector<Vertex> getCircleVertexArray(int numberOfVertex, int raio) {
 
+    Vertex origin;
+    origin.x = 0;
+    origin.y = 0;
+
+    float numberOfVertex = 16;
+    float angleIncrement = 360/numberOfVertex;
+    float raio = 5;
+
+    std::vector<Vertex> circleVertexArray;
+
+    for(double currentAngle = 0.0; currentAngle < 360.0; currentAngle+=angleIncrement) {
+        circleVertexArray.push_back(getVertex(origin, currentAngle, raio));
+    }
+    
+    return  circleVertexArray
+}
+
+// WIP
+Vertex getVertex(Vertex origin, float angle, float raio) {
+    Vertex temp;
+
+    temp.x = cos(angle * PI / 180) * 10;
+    temp.y = sin(angle * PI / 180) * 10;
+
+    return temp;
+}
