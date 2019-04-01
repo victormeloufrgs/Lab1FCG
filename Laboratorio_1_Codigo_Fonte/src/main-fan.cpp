@@ -24,6 +24,7 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+ #include <iostream>
 
 // Headers das bibliotecas OpenGL
 #include <glad/glad.h>   // Criação de contexto OpenGL 3.3
@@ -32,11 +33,15 @@
 // Headers locais, definidos na pasta "include/"
 #include "utils.h"
 
-#define PI 3.14159265
+#define PI 3.14159265358979
+
+int numberOfVerticesAround = 16;
+int totalVertices = numberOfVerticesAround+1;
+int indicesLength = totalVertices+1;
 
 struct Vertex {
-    int x;
-    int y;
+    GLfloat x;
+    GLfloat y;
 };
 
 // Declaração de várias funções utilizadas em main().  Essas estão definidas
@@ -54,7 +59,7 @@ void ErrorCallback(int error, const char* description);
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode);
 
 // Funções para obter círculo
-std::vector<Vertex> getCircleVertexArray(int numberOfVertex, int raio);
+std::vector<Vertex> getCircleVertexArray(int numberOfVertex, float raio);
 Vertex getVertex(Vertex origin, float angle, float raio);
 
 int main()
@@ -184,8 +189,7 @@ int main()
         //                |          |  |                 +--- Vértices começam em indices[0] (veja função BuildTriangles()).
         //                |          |  |                 |
         //                V          V  V                 V
-        glDrawElements(GL_TRIANGLE_FAN, 6, GL_UNSIGNED_BYTE, 0);
-
+        glDrawElements(GL_TRIANGLE_FAN, indicesLength, GL_UNSIGNED_BYTE, 0);
         // "Desligamos" o VAO, evitando assim que operações posteriores venham a
         // alterar o mesmo. Isso evita bugs.
         glBindVertexArray(0);
@@ -228,28 +232,34 @@ GLuint BuildTriangles()
     // Este vetor "NDC_coefficients" define a GEOMETRIA (veja slide 114 do documento "Aula_04_Modelagem_Geometrica_3D.pdf").
     //
 
-    std::vector<Vertex> vertexArray = getCircleVertexArray(16, 1);
+    std::vector<Vertex> vertexArray = getCircleVertexArray(numberOfVerticesAround, 0.7);
 
-    GLfloat NDC_coefficients [4*17];
+    GLfloat NDC_coefficients [4*totalVertices];
 
     NDC_coefficients[0] = 0.0f;
     NDC_coefficients[1] = 0.0f;
     NDC_coefficients[2] = 0.0f;
     NDC_coefficients[3] = 1.0f;
 
-    for (int i = 4; i < 17*4; i+= 4) {
-        NDC_coefficients[i] = vertexArray[i].x;
-        NDC_coefficients[i+1] = vertexArray[i].y;
+    for (int i = 4; i < totalVertices*4; i+= 4) {
+        NDC_coefficients[i] = vertexArray[(i-4)/4].x;
+        NDC_coefficients[i+1] = vertexArray[(i-4)/4].y;
         NDC_coefficients[i+2] = 0.0f;
         NDC_coefficients[i+3] = 1.0f;
     }
 
     // GLfloat NDC_coefficients[] = {
     // //    X      Y     Z     W
-    //     -0.5f, -0.1f, 0.0f, 1.0f,
-    //      0.5f, -0.5f, 0.0f, 1.0f,
-    //      0.0f,  0.5f, 0.0f, 1.0f,
-    //      0.5f,  0.5f, 0.0f, 1.0f
+    //      0.0f,  0.0f, 0.0f, 1.0f,
+    //      1.0f,  0.0f, 0.0f, 1.0f,
+    //      0.7f, 0.7f, 0.0f, 1.0f,
+    //      0.0f,  1.0f, 0.0f, 1.0f,
+    //     -0.7f,  0.7f, 0.0f, 1.0f,
+    //     -1.0f,  0.0f, 0.0f, 1.0f,
+    //     -0.7f, -0.7f, 0.0f, 1.0f,
+    //      0.0f,  -1.0f, 0.0f, 1.0f,
+    //      0.7f,  -0.7f, 0.0f, 1.0f,
+    //      1.0f,   0.0f, 0.0f, 1.0f,
     // };
 
     // Criamos o identificador (ID) de um Vertex Buffer Object (VBO).  Um VBO é
@@ -327,13 +337,19 @@ GLuint BuildTriangles()
     // isto é: Vermelho, Verde, Azul, Alpha (valor de transparência).
     // Conversaremos sobre sistemas de cores nas aulas de Modelos de Iluminação.
  
-    GLfloat color_coefficients [17*4];
+    GLfloat color_coefficients [totalVertices*4];
 
-    for (int i = 0; i < 17*4; i+= 4) {
-        color_coefficients[i] = 1.0f;
+    for (int i = 0; i < totalVertices*4; i+= 4) {
+        color_coefficients[i] = 0.0f;
         color_coefficients[i+1] = 0.0f;
         color_coefficients[i+2] = 0.0f;
         color_coefficients[i+3] = 1.0f;
+
+        if (i == 0) {
+            color_coefficients[i] = 1.0f;
+        } else {   
+            color_coefficients[i+2] = 1.0f;
+        }
     }
 
     // GLfloat color_coefficients[] = {
@@ -362,7 +378,14 @@ GLuint BuildTriangles()
     //
     // Este vetor "indices" define a TOPOLOGIA (veja slide 114 do documento "Aula_04_Modelagem_Geometrica_3D.pdf").
     //
-    GLubyte indices[] = { 0, 1, 2 0,  }; // GLubyte: valores entre 0 e 255 (8 bits sem sinal).
+    GLubyte indices[indicesLength]; // GLubyte: valores entre 0 e 255 (8 bits sem sinal).
+
+    for(int i = 0; i < indicesLength; i++) {
+        indices[i] = i;
+        if (i == indicesLength-1) {
+            indices[i] = 1; // fecha o círculo
+        }
+    }
 
     // Criamos um buffer OpenGL para armazenar os índices acima
     GLuint indices_id;
@@ -573,7 +596,7 @@ void ErrorCallback(int error, const char* description)
     fprintf(stderr, "ERROR: GLFW: %s\n", description);
 }
 
-std::vector<Vertex> getCircleVertexArray(int numberOfVertex, int raio) {
+std::vector<Vertex> getCircleVertexArray(int numberOfVertex, float raio) {
 
     Vertex origin;
     origin.x = 0;
@@ -582,12 +605,12 @@ std::vector<Vertex> getCircleVertexArray(int numberOfVertex, int raio) {
     float angleIncrement = 360/numberOfVertex;
 
     std::vector<Vertex> circleVertexArray;
-    circleVertexArray.reserve(numberOfVertex);
+    circleVertexArray.reserve(numberOfVertex+1);
 
-    for(double currentAngle = 0.0; currentAngle < 360.0; currentAngle+=angleIncrement) {
+    for(double currentAngle = 0; currentAngle <= 360.0; currentAngle+=angleIncrement) {
         circleVertexArray.push_back(getVertex(origin, currentAngle, raio));
     }
-    
+
     return  circleVertexArray;
 }
 
@@ -595,8 +618,16 @@ std::vector<Vertex> getCircleVertexArray(int numberOfVertex, int raio) {
 Vertex getVertex(Vertex origin, float angle, float raio) {
     Vertex temp;
 
-    temp.x = cos(angle * PI / 180) * 10;
-    temp.y = sin(angle * PI / 180) * 10;
+    temp.x = cos(angle * PI / 180) * raio;
+    temp.y = sin(angle * PI / 180) * raio;
+
+    if (temp.x == -0) {
+        temp.x = 0;
+    }
+
+    if (temp.y == -0) {
+        temp.y = 0;
+    }
 
     return temp;
 }
