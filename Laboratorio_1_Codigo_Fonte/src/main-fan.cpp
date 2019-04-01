@@ -351,14 +351,6 @@ GLuint BuildTriangles()
             color_coefficients[i+2] = 1.0f;
         }
     }
-
-    // GLfloat color_coefficients[] = {
-    // //  R     G     B     A
-    //     1.0f, 0.0f, 0.0f, 1.0f,
-    //     0.0f, 1.0f, 0.0f, 1.0f,
-    //     0.0f, 0.0f, 1.0f, 1.0f,
-    //     0.0f, 1.0f, 1.0f, 1.0f
-    // };
     
     GLuint VBO_color_coefficients_id;
     glGenBuffers(1, &VBO_color_coefficients_id);
@@ -602,7 +594,7 @@ std::vector<Vertex> getCircleVertexArray(int numberOfVertex, float raio) {
     origin.x = 0;
     origin.y = 0;
 
-    float angleIncrement = 360/numberOfVertex;
+    float angleIncrement = float(360.0)/float(numberOfVertex);
 
     std::vector<Vertex> circleVertexArray;
     circleVertexArray.reserve(numberOfVertex+1);
