@@ -635,7 +635,5 @@ Vertex getVertex(Vertex origin, float angle, float raio) {
         temp.y = 0; 
     }
 
-    std::cout << temp.x << " " << temp.y << std::endl;
-
     return temp;
 }
