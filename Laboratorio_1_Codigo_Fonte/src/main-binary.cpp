@@ -35,8 +35,8 @@
 
 #define PI 3.14159265358979
 
-int totalZeroVertices = 32;
-int indicesLength = totalZeroVertices+2; // +2 pois os dois últimos são pra fechar os triângulos.
+int totalZeroVertices = 6;
+int indicesLength = 0; // +2 pois os dois últimos são pra fechar os triângulos.
 
 struct Vertex {
     GLfloat x;
@@ -59,6 +59,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 
 // Funções para obter círculo
 std::vector<Vertex> getZeroVertexArray(Vertex origin, int numberOfVertex, float raioExterno, float raioInterno);
+std::vector<Vertex> getOneVertexArray(Vertex origin, float height, float width);
 Vertex getZeroVertex(Vertex origin, float angle, float raio);
 
 int main()
@@ -239,15 +240,19 @@ GLuint BuildNumbers()
     // Este vetor "NDC_coefficients" define a GEOMETRIA (veja slide 114 do documento "Aula_04_Modelagem_Geometrica_3D.pdf").
     //
 
+    // Vertex origin;
+    // origin.x = 0;
+    // origin.y = 0;
+
     Vertex origin;
     origin.x = 0;
     origin.y = 0;
 
-    std::vector<Vertex> vertexArray = getZeroVertexArray(origin, totalZeroVertices, 0.7, 0.5);
+    std::vector<Vertex> vertexArray = getOneVertexArray(origin, 0.5, 0.2); //getZeroVertexArray(origin, totalZeroVertices, 0.7, 0.6);
 
-    GLfloat NDC_coefficients [4*totalZeroVertices];
+    GLfloat NDC_coefficients [4*6];
 
-    for (int i = 0; i < totalZeroVertices*4; i+= 4) {
+    for (int i = 0; i < 6*4; i+= 4) {
         NDC_coefficients[i] = vertexArray[i/4].x;
         NDC_coefficients[i+1] = vertexArray[i/4].y;
         NDC_coefficients[i+2] = 0.0f;
@@ -347,17 +352,13 @@ GLuint BuildNumbers()
 
     bool isExternal = true;
     for (int i = 0; i < totalZeroVertices*4; i+= 4) {
-        color_coefficients[i] = 0.0f;
+        color_coefficients[i] = 1.0f;
         color_coefficients[i+1] = 0.0f;
         color_coefficients[i+2] = 0.0f;
         color_coefficients[i+3] = 1.0f;
 
-        if (isExternal) {
-            color_coefficients[i+2] = 1.0f;
-            isExternal = false;
-        } else {   
-            color_coefficients[i] = 1.0f;
-            isExternal = true;
+        if(i == 0) {
+            color_coefficients[i+1] = 1.0f;
         }
     }
 
@@ -387,17 +388,22 @@ GLuint BuildNumbers()
     //
     // Este vetor "indices" define a TOPOLOGIA (veja slide 114 do documento "Aula_04_Modelagem_Geometrica_3D.pdf").
     //
-    GLubyte indices[indicesLength]; // GLubyte: valores entre 0 e 255 (8 bits sem sinal).
 
-    for(int i = 0; i < indicesLength; i++) {
-        indices[i] = i;
+    // GLubyte indices[indicesLength]; // GLubyte: valores entre 0 e 255 (8 bits sem sinal).
 
-        if (i == indicesLength-2) {
-            indices[i] = 0;
-        } else if (i == indicesLength-1) {
-            indices[i] = 1; // fecha o círculo
-        }
-    }
+    // for(int i = 0; i < indicesLength; i++) {
+    //     indices[i] = i;
+
+    //     if (i == indicesLength-2) {
+    //         indices[i] = 0;
+    //     } else if (i == indicesLength-1) {
+    //         indices[i] = 1; // fecha o círculo
+    //     }
+    // }
+
+    GLubyte indices[] = {1, 0, 2, 3, 4, 5};
+    indicesLength = 6;
+
 
     // Criamos um buffer OpenGL para armazenar os índices acima
     GLuint indices_id;
@@ -608,6 +614,32 @@ void ErrorCallback(int error, const char* description)
     fprintf(stderr, "ERROR: GLFW: %s\n", description);
 }
 
+// origin is bottom left vertex
+std::vector<Vertex> getOneVertexArray(Vertex origin, float height, float width) {
+    
+    std::vector<Vertex> oneVertexArray;
+
+    Vertex v0 = origin;
+    Vertex v1 = Vertex { origin.x+width*0.6f, origin.y};
+    Vertex v2 = Vertex { origin.x+width*0.6f, origin.y+height};
+    Vertex v3 = Vertex { origin.x, origin.y+height};
+    Vertex v4 = Vertex { origin.x, origin.y+height*0.9f};
+    Vertex v5 = Vertex { origin.x-width*0.4f, origin.y+height*0.85f};
+
+    oneVertexArray.push_back(v0);
+    oneVertexArray.push_back(v1);
+    oneVertexArray.push_back(v2);
+    oneVertexArray.push_back(v3);
+    oneVertexArray.push_back(v4);
+    oneVertexArray.push_back(v5);
+
+    for(int i = 0; i < oneVertexArray.size(); i++) {
+        std::cout << oneVertexArray[i].x << " " << oneVertexArray[i].y << std::endl;
+    }
+
+    return oneVertexArray;            
+}
+
 std::vector<Vertex> getZeroVertexArray(Vertex origin, int numberOfVertex, float raioExterno, float raioInterno) {
 
     float angleIncrement = float(360.0)/float(numberOfVertex);
@@ -621,10 +653,11 @@ std::vector<Vertex> getZeroVertexArray(Vertex origin, int numberOfVertex, float 
         Vertex zeroVertex;
         if (i % 2 == 0) {
             zeroVertex = getZeroVertex(origin, currentAngle, raioExterno);
+        zeroVertex.x *= 0.65;
         } else {
             zeroVertex = getZeroVertex(origin, currentAngle, raioInterno);
+        zeroVertex.x *= 0.35;
         }
-        zeroVertex.x *= 0.5;
 
         circleVertexArray.push_back(zeroVertex);
         i++;
@@ -633,7 +666,6 @@ std::vector<Vertex> getZeroVertexArray(Vertex origin, int numberOfVertex, float 
     return  circleVertexArray;
 }
 
-// WIP
 Vertex getZeroVertex(Vertex origin, float angle, float raio) {
     Vertex temp;
 
@@ -647,8 +679,6 @@ Vertex getZeroVertex(Vertex origin, float angle, float raio) {
     if (temp.y == -0) {
         temp.y = 0; 
     }
-
-    std::cout << temp.x << " " << temp.y << std::endl;
 
     return temp;
 }
