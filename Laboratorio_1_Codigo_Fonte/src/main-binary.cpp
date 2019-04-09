@@ -35,8 +35,13 @@
 
 #define PI 3.14159265358979
 
-int totalZeroVertices = 6;
+int totalZeroVertices = 32;
+int totalOneVertices = 6;
+int totalVertices = totalZeroVertices + totalOneVertices;
+
 int indicesLength = 0; // +2 pois os dois últimos são pra fechar os triângulos.
+int totalV = 0;
+int lastSecond = -1;
 
 struct Vertex {
     GLfloat x;
@@ -61,6 +66,14 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode
 std::vector<Vertex> getZeroVertexArray(Vertex origin, int numberOfVertex, float raioExterno, float raioInterno);
 std::vector<Vertex> getOneVertexArray(Vertex origin, float height, float width);
 Vertex getZeroVertex(Vertex origin, float angle, float raio);
+std::vector<GLubyte> getVerticesForNumber(int number);
+std::vector<GLubyte> getVerticesForPattern(bool first, bool second, bool third, bool fourth);
+std::vector<GLubyte> getVerticesForOneAt(int position);
+std::vector<GLubyte> getVerticesForZeroAt(int position);
+
+std::vector<GLubyte> vertices0, vertices1, vertices2, vertices3, vertices4, vertices5,
+                     vertices6, vertices7, vertices8, vertices9, vertices10, vertices11,
+                     vertices12, vertices13, vertices14, vertices15;
 
 int main()
 {
@@ -158,6 +171,14 @@ int main()
     // Ficamos em um loop infinito, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
     {
+
+        int seconds = (int)glfwGetTime() % 16;
+
+        if (seconds != lastSecond) {
+            lastSecond = seconds;
+        }
+
+
         // Aqui executamos as operações de renderização
 
         // Definimos a cor do "fundo" do framebuffer como branco.  Tal cor é
@@ -183,8 +204,7 @@ int main()
         // comentários detalhados dentro da definição de BuildNumbers().
         glBindVertexArray(vertex_array_object_id);
 
-
-        
+        // std::cout << "length: " << indicesLength << std::endl;
 
         // Pedimos para a GPU rasterizar os vértices apontados pelo VAO como
         // triângulos.
@@ -195,8 +215,7 @@ int main()
         //                |          |  |                 +--- Vértices começam em indices[0] (veja função BuildNumbers()).
         //                |          |  |                 |
         //                V          V  V                 V
-        glDrawElements(GL_TRIANGLE_STRIP, indicesLength, GL_UNSIGNED_BYTE, 0);
-
+        glDrawElements(GL_TRIANGLES, indicesLength, GL_UNSIGNED_BYTE, 0);
         
         // "Desligamos" o VAO, evitando assim que operações posteriores venham a
         // alterar o mesmo. Isso evita bugs.
@@ -240,23 +259,45 @@ GLuint BuildNumbers()
     // Este vetor "NDC_coefficients" define a GEOMETRIA (veja slide 114 do documento "Aula_04_Modelagem_Geometrica_3D.pdf").
     //
 
-    // Vertex origin;
-    // origin.x = 0;
-    // origin.y = 0;
+    Vertex originFirstOne = {-0.75,-0.5};
+    Vertex originSecondOne = {-0.25,-0.5};
+    Vertex originThirdOne = {0.25,-0.5};
+    Vertex originFourthOne = {0.75,-0.5};
 
-    Vertex origin;
-    origin.x = 0;
-    origin.y = 0;
+    Vertex originFirstZero = {-0.75, 0};
+    Vertex originSecondZero = {-0.25, 0};
+    Vertex originThirdZero = {0.25, 0};
+    Vertex originFourthZero = {0.75, 0};
 
-    std::vector<Vertex> vertexArray = getOneVertexArray(origin, 0.5, 0.2); //getZeroVertexArray(origin, totalZeroVertices, 0.7, 0.6);
+    std::vector<Vertex> firstOne = getOneVertexArray(originFirstOne, 1, 0.2);
+    std::vector<Vertex> secondOne = getOneVertexArray(originSecondOne, 1, 0.2);
+    std::vector<Vertex> thirdOne = getOneVertexArray(originThirdOne, 1, 0.2);
+    std::vector<Vertex> fourthOne = getOneVertexArray(originFourthOne, 1, 0.2);
+    
+    std::vector<Vertex> vertexArray = firstOne;
+    vertexArray.insert(std::end(vertexArray), std::begin(secondOne), std::end(secondOne));
+    vertexArray.insert(std::end(vertexArray), std::begin(thirdOne), std::end(thirdOne));
+    vertexArray.insert(std::end(vertexArray), std::begin(fourthOne), std::end(fourthOne));
 
-    GLfloat NDC_coefficients [4*6];
+    std::vector<Vertex> firstZero = getZeroVertexArray(originFirstZero, totalZeroVertices, 0.5, 0.4);
+    std::vector<Vertex> secondZero = getZeroVertexArray(originSecondZero, totalZeroVertices, 0.5, 0.4);
+    std::vector<Vertex> thirdZero = getZeroVertexArray(originThirdZero, totalZeroVertices, 0.5, 0.4);
+    std::vector<Vertex> fourthZero = getZeroVertexArray(originFourthZero, totalZeroVertices, 0.5, 0.4);
 
-    for (int i = 0; i < 6*4; i+= 4) {
+    vertexArray.insert(std::end(vertexArray), std::begin(firstZero), std::end(firstZero));
+    vertexArray.insert(std::end(vertexArray), std::begin(secondZero), std::end(secondZero));
+    vertexArray.insert(std::end(vertexArray), std::begin(thirdZero), std::end(thirdZero));
+    vertexArray.insert(std::end(vertexArray), std::begin(fourthZero), std::end(fourthZero));
+
+    GLfloat NDC_coefficients [4*(totalVertices*4)];
+
+    for (int i = 0; i < 4*(totalVertices*4); i+= 4) {
         NDC_coefficients[i] = vertexArray[i/4].x;
         NDC_coefficients[i+1] = vertexArray[i/4].y;
         NDC_coefficients[i+2] = 0.0f;
         NDC_coefficients[i+3] = 1.0f;
+
+        // std::cout << "x: " << vertexArray[i/4].x << " y: " << vertexArray[i/4].y << std::endl;
     }
 
     // GLfloat NDC_coefficients[] = {
@@ -348,17 +389,18 @@ GLuint BuildNumbers()
     // isto é: Vermelho, Verde, Azul, Alpha (valor de transparência).
     // Conversaremos sobre sistemas de cores nas aulas de Modelos de Iluminação.
  
-    GLfloat color_coefficients [totalZeroVertices*4];
+    GLfloat color_coefficients [4*(totalVertices*4)];
 
-    bool isExternal = true;
-    for (int i = 0; i < totalZeroVertices*4; i+= 4) {
-        color_coefficients[i] = 1.0f;
+    for (int i = 0; i < 4*(totalVertices*4); i+= 4) {
+        color_coefficients[i] = 0.0f;
         color_coefficients[i+1] = 0.0f;
         color_coefficients[i+2] = 0.0f;
         color_coefficients[i+3] = 1.0f;
 
-        if(i == 0) {
-            color_coefficients[i+1] = 1.0f;
+        if(i < totalOneVertices*16) {
+            color_coefficients[i+2] = 1.0f;
+        } else {
+            color_coefficients[i] = 1.0f;
         }
     }
 
@@ -401,9 +443,60 @@ GLuint BuildNumbers()
     //     }
     // }
 
-    GLubyte indices[] = {1, 0, 2, 3, 4, 5};
-    indicesLength = 6;
+    // std::vector<GLubyte> indicesOne1 = getVerticesForOneAt(1);
+    // std::vector<GLubyte> indicesOne2 = getVerticesForOneAt(2);
+    // std::vector<GLubyte> indicesOne3 = getVerticesForOneAt(3);
+    // std::vector<GLubyte> indicesOne4 = getVerticesForOneAt(4);
 
+    // std::vector<GLubyte> indicesZero1 = getVerticesForZeroAt(1);
+    // std::vector<GLubyte> indicesZero2 = getVerticesForZeroAt(2);
+    // std::vector<GLubyte> indicesZero3 = getVerticesForZeroAt(3);
+    // std::vector<GLubyte> indicesZero4 = getVerticesForZeroAt(4);    
+
+    // number 0
+    // number 1
+    // number 2
+    // number 3
+    // number 4
+    // number 5
+    // number 6
+    // number 7
+    // number 8
+    // number 9
+    // number 10
+    // number 11
+    // number 12
+    // number 13
+    // number 14
+    // number 15
+    vertices0 = getVerticesForNumber(0);
+
+    // std::vector<GLubyte> indices = indicesOne1;
+    // indices.insert(std::end(indices), std::begin(indicesOne1), std::end(indicesOne1));
+    // indices.insert(std::end(indices), std::begin(indicesOne2), std::end(indicesOne2));
+    // indices.insert(std::end(indices), std::begin(indicesOne3), std::end(indicesOne3));
+    // indices.insert(std::end(indices), std::begin(indicesOne4), std::end(indicesOne4));
+
+
+    // indices.insert(std::end(indices), std::begin(indicesZero1), std::end(indicesZero1));
+    // indices.insert(std::end(indices), std::begin(indicesZero2), std::end(indicesZero2));
+    // indices.insert(std::end(indices), std::begin(indicesZero3), std::end(indicesZero3));
+    // indices.insert(std::end(indices), std::begin(indicesZero4), std::end(indicesZero4));
+
+    // std::vector<GLubyte> indices = { 18,19,20,  18,20,21,  23,22,21,
+    //                                 0,1,2,  0,2,3,  5,4,3,  
+    //                                  6,7,8,  6,8,9,  11,10,9,  
+    //                                  12,13,14,  12,14,15,  17,16,15}; //indicesOne1;
+    std::vector<GLubyte> indices = vertices15;
+
+    // std::cout << "indices:" << std::endl;
+    // for(int i = 0; i < indices.size(); i++) {
+    //     std::cout << int(indices[i]) << std::endl;
+    // }
+
+    // std::cout << "-----------------" << std::endl;
+
+    indicesLength = indices.size();
 
     // Criamos um buffer OpenGL para armazenar os índices acima
     GLuint indices_id;
@@ -413,10 +506,10 @@ GLuint BuildNumbers()
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_id);
 
     // Alocamos memória para o buffer.
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), NULL, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size(), NULL, GL_STATIC_DRAW);
 
     // Copiamos os valores do array indices[] para dentro do buffer.
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(indices), indices);
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, indices.size(), &indices[0]);
 
     // NÃO faça a chamada abaixo! Diferente de um VBO (GL_ARRAY_BUFFER), um
     // array de índices (GL_ELEMENT_ARRAY_BUFFER) não pode ser "desligado",
@@ -633,10 +726,6 @@ std::vector<Vertex> getOneVertexArray(Vertex origin, float height, float width) 
     oneVertexArray.push_back(v4);
     oneVertexArray.push_back(v5);
 
-    for(int i = 0; i < oneVertexArray.size(); i++) {
-        std::cout << oneVertexArray[i].x << " " << oneVertexArray[i].y << std::endl;
-    }
-
     return oneVertexArray;            
 }
 
@@ -647,17 +736,25 @@ std::vector<Vertex> getZeroVertexArray(Vertex origin, int numberOfVertex, float 
     std::vector<Vertex> circleVertexArray;
     circleVertexArray.reserve(numberOfVertex+1);
 
+    Vertex originZero = { 0, 0 };
+
     int i = 0;
-    for(double currentAngle = 0; currentAngle <= 360.0; currentAngle+=angleIncrement) {
+    for(double currentAngle = 0; currentAngle < 360.0; currentAngle+=angleIncrement) {
 
         Vertex zeroVertex;
         if (i % 2 == 0) {
-            zeroVertex = getZeroVertex(origin, currentAngle, raioExterno);
-        zeroVertex.x *= 0.65;
+            zeroVertex = getZeroVertex(originZero, currentAngle, raioExterno);
+        zeroVertex.x *= 0.4;
         } else {
-            zeroVertex = getZeroVertex(origin, currentAngle, raioInterno);
-        zeroVertex.x *= 0.35;
+            zeroVertex = getZeroVertex(originZero, currentAngle, raioInterno);
+        zeroVertex.x *= 0.25;
         }
+
+        std::cout << zeroVertex.x << " " << zeroVertex.y << std::endl; 
+
+        zeroVertex.x += origin.x;
+        zeroVertex.y += origin.y;
+
 
         circleVertexArray.push_back(zeroVertex);
         i++;
@@ -681,4 +778,145 @@ Vertex getZeroVertex(Vertex origin, float angle, float raio) {
     }
 
     return temp;
+}
+
+std::vector<GLubyte> getVerticesForNumber(int number) {
+
+    switch (number)
+    {
+        case 0:
+            return getVerticesForPattern(false, false, false, false);
+            break;
+        case 1:
+            return getVerticesForPattern(false, false, false, true);
+            break;
+        case 2:
+            return getVerticesForPattern(false, false, true, false);
+            break;
+        case 3:
+            return getVerticesForPattern(false, false, true, true);
+            break;
+        case 4:
+            return getVerticesForPattern(false, true, false, false);
+            break;
+        case 5:
+            return getVerticesForPattern(false, true, false, true);
+            break;
+        case 6:
+            return getVerticesForPattern(false, true, true, false);
+            break;
+        case 7:
+            return getVerticesForPattern(false, true, true, true);
+            break;
+        case 8:
+            return getVerticesForPattern(true, false, false, false);
+            break;
+        case 9:
+            return getVerticesForPattern(true, false, false, true);
+            break;
+        case 10:
+            return getVerticesForPattern(true, false, true, false);
+            break;
+        case 11:
+            return getVerticesForPattern(true, false, true, true);
+            break;
+        case 12:
+            return getVerticesForPattern(true, true, false, false);
+            break;
+        case 13:
+            return getVerticesForPattern(true, true, false, true);
+            break;
+        case 14:
+            return getVerticesForPattern(true, true, true, false);
+            break;
+        case 15:
+            return getVerticesForPattern(true, true, true, true);
+            break;
+        default:
+            return {};
+            break;
+    }
+}
+
+std::vector<GLubyte> getVerticesForPattern(bool first, bool second, bool third, bool fourth) {
+
+    std::vector<GLubyte> vertexArray;
+    
+    if(first) {
+        vertexArray = getVerticesForOneAt(1);
+    } else {
+        vertexArray = getVerticesForZeroAt(1);
+    }
+
+    if (second) {
+        std::vector<GLubyte> secondOne = getVerticesForOneAt(2);
+        vertexArray.insert(std::end(vertexArray), std::begin(secondOne), std::end(secondOne));
+    } else {
+        std::vector<GLubyte> secondOne = getVerticesForZeroAt(2);
+        vertexArray.insert(std::end(vertexArray), std::begin(secondOne), std::end(secondOne));
+    }
+
+    if (third) {
+        std::vector<GLubyte> thirdOne = getVerticesForOneAt(3);
+        vertexArray.insert(std::end(vertexArray), std::begin(thirdOne), std::end(thirdOne));
+    } else {
+        std::vector<GLubyte> thirdOne = getVerticesForZeroAt(3);
+        vertexArray.insert(std::end(vertexArray), std::begin(thirdOne), std::end(thirdOne));
+    }
+
+    if (fourth) {
+        std::vector<GLubyte> fourthOne = getVerticesForOneAt(4);
+        vertexArray.insert(std::end(vertexArray), std::begin(fourthOne), std::end(fourthOne));
+    } else {
+        std::vector<GLubyte> fourthOne = getVerticesForZeroAt(4);
+        vertexArray.insert(std::end(vertexArray), std::begin(fourthOne), std::end(fourthOne));
+    }
+
+    return vertexArray;
+}
+
+// position 1, 2, 3 or 4, to get the nth one
+std::vector<GLubyte> getVerticesForOneAt(int position) {
+
+    GLubyte v0 = totalOneVertices*(position-1);
+    GLubyte v1 = v0+1;
+    GLubyte v2 = v0+2;
+    GLubyte v3 = v0+3;    
+    GLubyte v4 = v0+4;
+    GLubyte v5 = v0+5;
+
+    return {v0, v1, v2,  v0, v2, v3,  v5, v4, v3};
+}
+
+// position 1, 2, 3 or 4, to get the nth zero
+std::vector<GLubyte> getVerticesForZeroAt(int position) {
+
+    GLubyte v0 = totalOneVertices*4 + (totalZeroVertices) * (position-1);
+
+    // if (position == 2) { 
+    //     v0 += 1;
+    // } else if (position == 3) {
+    //     v0 += 2;
+    // } else if (position == 4) {
+    //     v0 += 3;
+    // }
+
+    std::vector<GLubyte> vertexList = {};
+    for (GLubyte i = 0; i < totalZeroVertices-2; i+= 1) {
+        vertexList.push_back(v0+i);
+        vertexList.push_back(v0+i+1);
+        vertexList.push_back(v0+i+2);
+    }
+
+    vertexList.push_back(v0+totalZeroVertices-2);    
+    vertexList.push_back(v0+totalZeroVertices-1);
+    vertexList.push_back(v0);
+
+    vertexList.push_back(v0+totalZeroVertices-1);    
+    vertexList.push_back(v0);
+    vertexList.push_back(v0+1);
+
+    std::cout << "Total: " << vertexList.size() << std::endl;
+
+    return vertexList;
 }
