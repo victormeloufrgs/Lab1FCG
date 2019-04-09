@@ -39,9 +39,11 @@ int totalZeroVertices = 32;
 int totalOneVertices = 6;
 int totalVertices = totalZeroVertices + totalOneVertices;
 
-int indicesLength = 0; // +2 pois os dois últimos são pra fechar os triângulos.
-int totalV = 0;
+int totalZeroIndices = 96;
+int totalOneIndices = 9;
+
 int lastSecond = -1;
+int indicesSize = 0;
 
 struct Vertex {
     GLfloat x;
@@ -70,10 +72,8 @@ std::vector<GLubyte> getVerticesForNumber(int number);
 std::vector<GLubyte> getVerticesForPattern(bool first, bool second, bool third, bool fourth);
 std::vector<GLubyte> getVerticesForOneAt(int position);
 std::vector<GLubyte> getVerticesForZeroAt(int position);
-
-std::vector<GLubyte> vertices0, vertices1, vertices2, vertices3, vertices4, vertices5,
-                     vertices6, vertices7, vertices8, vertices9, vertices10, vertices11,
-                     vertices12, vertices13, vertices14, vertices15;
+int getStartIndexForNumber(int number);
+int getIndicesLengthForNumber(int number);
 
 int main()
 {
@@ -173,11 +173,14 @@ int main()
     {
 
         int seconds = (int)glfwGetTime() % 16;
-
         if (seconds != lastSecond) {
             lastSecond = seconds;
         }
 
+        int startIndex = getStartIndexForNumber(lastSecond);
+        int indicesLength = getIndicesLengthForNumber(lastSecond);
+        std::cout << "startIndex: " << startIndex << std::endl;
+        std::cout << "indicesLength: " << indicesLength << std::endl;
 
         // Aqui executamos as operações de renderização
 
@@ -203,8 +206,7 @@ int main()
         // vértices apontados pelo VAO criado pela função BuildNumbers(). Veja
         // comentários detalhados dentro da definição de BuildNumbers().
         glBindVertexArray(vertex_array_object_id);
-
-        // std::cout << "length: " << indicesLength << std::endl;
+        
 
         // Pedimos para a GPU rasterizar os vértices apontados pelo VAO como
         // triângulos.
@@ -215,7 +217,7 @@ int main()
         //                |          |  |                 +--- Vértices começam em indices[0] (veja função BuildNumbers()).
         //                |          |  |                 |
         //                V          V  V                 V
-        glDrawElements(GL_TRIANGLES, indicesLength, GL_UNSIGNED_BYTE, 0);
+        glDrawElements(GL_TRIANGLES, indicesLength, GL_UNSIGNED_BYTE, reinterpret_cast<const GLvoid *>(startIndex));
         
         // "Desligamos" o VAO, evitando assim que operações posteriores venham a
         // alterar o mesmo. Isso evita bugs.
@@ -453,41 +455,12 @@ GLuint BuildNumbers()
     // std::vector<GLubyte> indicesZero3 = getVerticesForZeroAt(3);
     // std::vector<GLubyte> indicesZero4 = getVerticesForZeroAt(4);    
 
-    // number 0
-    // number 1
-    // number 2
-    // number 3
-    // number 4
-    // number 5
-    // number 6
-    // number 7
-    // number 8
-    // number 9
-    // number 10
-    // number 11
-    // number 12
-    // number 13
-    // number 14
-    // number 15
-    vertices0 = getVerticesForNumber(0);
 
-    // std::vector<GLubyte> indices = indicesOne1;
-    // indices.insert(std::end(indices), std::begin(indicesOne1), std::end(indicesOne1));
-    // indices.insert(std::end(indices), std::begin(indicesOne2), std::end(indicesOne2));
-    // indices.insert(std::end(indices), std::begin(indicesOne3), std::end(indicesOne3));
-    // indices.insert(std::end(indices), std::begin(indicesOne4), std::end(indicesOne4));
-
-
-    // indices.insert(std::end(indices), std::begin(indicesZero1), std::end(indicesZero1));
-    // indices.insert(std::end(indices), std::begin(indicesZero2), std::end(indicesZero2));
-    // indices.insert(std::end(indices), std::begin(indicesZero3), std::end(indicesZero3));
-    // indices.insert(std::end(indices), std::begin(indicesZero4), std::end(indicesZero4));
-
-    // std::vector<GLubyte> indices = { 18,19,20,  18,20,21,  23,22,21,
-    //                                 0,1,2,  0,2,3,  5,4,3,  
-    //                                  6,7,8,  6,8,9,  11,10,9,  
-    //                                  12,13,14,  12,14,15,  17,16,15}; //indicesOne1;
-    std::vector<GLubyte> indices = vertices15;
+    std::vector<GLubyte> indices = getVerticesForNumber(0);
+    for(int i=1; i < 16; i++) {
+        std::vector<GLubyte> verticesI = getVerticesForNumber(i);
+        indices.insert(std::end(indices), std::begin(verticesI), std::end(verticesI));
+    }
 
     // std::cout << "indices:" << std::endl;
     // for(int i = 0; i < indices.size(); i++) {
@@ -495,9 +468,7 @@ GLuint BuildNumbers()
     // }
 
     // std::cout << "-----------------" << std::endl;
-
-    indicesLength = indices.size();
-
+    indicesSize = indices.size();
     // Criamos um buffer OpenGL para armazenar os índices acima
     GLuint indices_id;
     glGenBuffers(1, &indices_id);
@@ -893,14 +864,6 @@ std::vector<GLubyte> getVerticesForZeroAt(int position) {
 
     GLubyte v0 = totalOneVertices*4 + (totalZeroVertices) * (position-1);
 
-    // if (position == 2) { 
-    //     v0 += 1;
-    // } else if (position == 3) {
-    //     v0 += 2;
-    // } else if (position == 4) {
-    //     v0 += 3;
-    // }
-
     std::vector<GLubyte> vertexList = {};
     for (GLubyte i = 0; i < totalZeroVertices-2; i+= 1) {
         vertexList.push_back(v0+i);
@@ -916,7 +879,134 @@ std::vector<GLubyte> getVerticesForZeroAt(int position) {
     vertexList.push_back(v0);
     vertexList.push_back(v0+1);
 
-    std::cout << "Total: " << vertexList.size() << std::endl;
+    std::cout << vertexList.size() << " <- É isso!!!!!! " << std::endl;
 
     return vertexList;
+}
+
+
+int getStartIndexForNumber(int number) {
+    switch (number)
+    {
+        case 0:
+            return 0;
+            break;
+        case 1:
+            return getIndicesLengthForNumber(0);
+            break;
+        case 2:
+            return getIndicesLengthForNumber(0)+getIndicesLengthForNumber(1);
+            break;
+        case 3:
+            return getIndicesLengthForNumber(0)+getIndicesLengthForNumber(1)+getIndicesLengthForNumber(2);
+            break;
+        case 4:
+            return getIndicesLengthForNumber(0)+getIndicesLengthForNumber(1)+getIndicesLengthForNumber(2)+getIndicesLengthForNumber(3);        
+            break;
+        case 5:
+            return getIndicesLengthForNumber(0)+getIndicesLengthForNumber(1)+getIndicesLengthForNumber(2)+getIndicesLengthForNumber(3)+getIndicesLengthForNumber(4);    
+            break;
+        case 6:
+            return getIndicesLengthForNumber(0)+getIndicesLengthForNumber(1)+getIndicesLengthForNumber(2)+getIndicesLengthForNumber(3)+getIndicesLengthForNumber(4)+getIndicesLengthForNumber(5);
+            break;
+        case 7:
+            return getIndicesLengthForNumber(0)+getIndicesLengthForNumber(1)+getIndicesLengthForNumber(2)+getIndicesLengthForNumber(3)+getIndicesLengthForNumber(4)+getIndicesLengthForNumber(5)+
+                   getIndicesLengthForNumber(6);
+            break;
+        case 8:
+            return getIndicesLengthForNumber(0)+getIndicesLengthForNumber(1)+getIndicesLengthForNumber(2)+getIndicesLengthForNumber(3)+getIndicesLengthForNumber(4)+getIndicesLengthForNumber(5)+
+                   getIndicesLengthForNumber(6)+getIndicesLengthForNumber(7);
+            break;
+        case 9:
+            return getIndicesLengthForNumber(0)+getIndicesLengthForNumber(1)+getIndicesLengthForNumber(2)+getIndicesLengthForNumber(3)+getIndicesLengthForNumber(4)+getIndicesLengthForNumber(5)+
+                   getIndicesLengthForNumber(6)+getIndicesLengthForNumber(7)+getIndicesLengthForNumber(8);
+            break;
+        case 10:
+            return getIndicesLengthForNumber(0)+getIndicesLengthForNumber(1)+getIndicesLengthForNumber(2)+getIndicesLengthForNumber(3)+getIndicesLengthForNumber(4)+getIndicesLengthForNumber(5)+
+                   getIndicesLengthForNumber(6)+getIndicesLengthForNumber(7)+getIndicesLengthForNumber(8)+getIndicesLengthForNumber(9);
+            break;
+        case 11:
+            return getIndicesLengthForNumber(0)+getIndicesLengthForNumber(1)+getIndicesLengthForNumber(2)+getIndicesLengthForNumber(3)+getIndicesLengthForNumber(4)+getIndicesLengthForNumber(5)+
+                   getIndicesLengthForNumber(6)+getIndicesLengthForNumber(7)+getIndicesLengthForNumber(8)+getIndicesLengthForNumber(9)+getIndicesLengthForNumber(10);
+            break;
+        case 12:
+            return getIndicesLengthForNumber(0)+getIndicesLengthForNumber(1)+getIndicesLengthForNumber(2)+getIndicesLengthForNumber(3)+getIndicesLengthForNumber(4)+getIndicesLengthForNumber(5)+
+                   getIndicesLengthForNumber(6)+getIndicesLengthForNumber(7)+getIndicesLengthForNumber(8)+getIndicesLengthForNumber(9)+getIndicesLengthForNumber(10)+getIndicesLengthForNumber(11);
+            break;
+        case 13:
+            return getIndicesLengthForNumber(0)+getIndicesLengthForNumber(1)+getIndicesLengthForNumber(2)+getIndicesLengthForNumber(3)+getIndicesLengthForNumber(4)+getIndicesLengthForNumber(5)+
+                   getIndicesLengthForNumber(6)+getIndicesLengthForNumber(7)+getIndicesLengthForNumber(8)+getIndicesLengthForNumber(9)+getIndicesLengthForNumber(10)+getIndicesLengthForNumber(11)+
+                   getIndicesLengthForNumber(12);
+            break;
+        case 14:
+            return getIndicesLengthForNumber(0)+getIndicesLengthForNumber(1)+getIndicesLengthForNumber(2)+getIndicesLengthForNumber(3)+getIndicesLengthForNumber(4)+getIndicesLengthForNumber(5)+
+                   getIndicesLengthForNumber(6)+getIndicesLengthForNumber(7)+getIndicesLengthForNumber(8)+getIndicesLengthForNumber(9)+getIndicesLengthForNumber(10)+getIndicesLengthForNumber(11)+
+                   getIndicesLengthForNumber(12)+getIndicesLengthForNumber(13);
+            break;
+        case 15:
+            return getIndicesLengthForNumber(0)+getIndicesLengthForNumber(1)+getIndicesLengthForNumber(2)+getIndicesLengthForNumber(3)+getIndicesLengthForNumber(4)+getIndicesLengthForNumber(5)+
+                   getIndicesLengthForNumber(6)+getIndicesLengthForNumber(7)+getIndicesLengthForNumber(8)+getIndicesLengthForNumber(9)+getIndicesLengthForNumber(10)+getIndicesLengthForNumber(11)+
+                   getIndicesLengthForNumber(12)+getIndicesLengthForNumber(13)+getIndicesLengthForNumber(14);
+            break;    
+        default:
+            return 0;
+            break;
+    }
+}
+
+int getIndicesLengthForNumber(int number) {
+    switch (number)
+    {
+        case 0://0000
+            return totalZeroIndices*4;
+            break;
+        case 1://0001
+            return totalZeroIndices*3+totalOneIndices*1;
+            break;
+        case 2://0010
+            return totalZeroIndices*3+totalOneIndices*1;
+            break;
+        case 3: //0011
+            return totalZeroIndices*2+totalOneIndices*2;
+            break;
+        case 4: //0100
+            return totalZeroIndices*3+totalOneIndices*1;
+            break;
+        case 5://0101
+            return totalZeroIndices*2+totalOneIndices*2;
+            break;
+        case 6://0110
+            return totalZeroIndices*2+totalOneIndices*2;
+            break;
+        case 7://0111
+            return totalZeroIndices*1+totalOneIndices*3;
+            break;
+        case 8://1000
+            return totalZeroIndices*3+totalOneIndices*1;
+            break;
+        case 9://1001
+            return totalZeroIndices*2+totalOneIndices*2;
+            break;
+        case 10://1010
+            return totalZeroIndices*2+totalOneIndices*2;
+            break;
+        case 11://1011
+            return totalZeroIndices*1+totalOneIndices*3;
+            break;
+        case 12://1100
+            return totalZeroIndices*2+totalOneIndices*2;
+            break;
+        case 13://1101
+            return totalZeroIndices*1+totalOneIndices*3;
+            break;
+        case 14://1110
+            return totalZeroIndices*1+totalOneIndices*3;
+            break;
+        case 15://1111
+            return totalOneIndices*4;
+            break;    
+        default:
+            return 0;
+            break;
+    }
 }

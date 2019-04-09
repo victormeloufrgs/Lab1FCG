@@ -608,7 +608,7 @@ std::vector<Vertex> getDonutVertexArray(int numberOfVertex, float raioExterno, f
     circleVertexArray.reserve(numberOfVertex+1);
 
     int i = 0;
-    for(double currentAngle = 0; currentAngle <= 360.0; currentAngle+=angleIncrement) {
+    for(double currentAngle = 0; currentAngle < 360.0; currentAngle+=angleIncrement) {
         if (i % 2 == 0) {
             circleVertexArray.push_back(getVertex(origin, currentAngle, raioExterno));
         } else {

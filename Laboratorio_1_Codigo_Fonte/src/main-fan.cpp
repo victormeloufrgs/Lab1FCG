@@ -599,7 +599,7 @@ std::vector<Vertex> getCircleVertexArray(int numberOfVertex, float raio) {
     std::vector<Vertex> circleVertexArray;
     circleVertexArray.reserve(numberOfVertex+1);
 
-    for(double currentAngle = 0; currentAngle <= 360.0; currentAngle+=angleIncrement) {
+    for(double currentAngle = 0; currentAngle < 360.0; currentAngle+=angleIncrement) {
         circleVertexArray.push_back(getVertex(origin, currentAngle, raio));
     }
 
